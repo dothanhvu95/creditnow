@@ -40,6 +40,7 @@ Route::group(['prefix' => 'admin'], function () {
     Route::post('update-note-admin/{any}/{cm}','\App\Http\Controllers\Voyager\HistoryController@update_note_admin');
     Route::post('update-note-admin-multi','\App\Http\Controllers\Voyager\HistoryController@update_note_admin_multi');
     Route::get('history','\App\Http\Controllers\Voyager\HistoryController@index');
+    Route::get('historybk','\App\Http\Controllers\Voyager\FixController@index');
     // Route::post('history','\App\Http\Controllers\Voyager\HistoryController@search_data_history');
     Route::get('user-in-group/{id}','\App\Http\Controllers\Voyager\HistoryController@getUser_teAm');
     Route::any('mirae/export','\App\Http\Controllers\Voyager\HistoryController@getExport');

@@ -1,4 +1,4 @@
-<div class="modal fade bd-example-modal-lg" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+<!-- <div class="modal fade bd-example-modal-lg" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered" role="document">
         <form class="form-inline" action="{{url('admin/update-note-admin-multi')}}" method="POST">
           @csrf
@@ -55,4 +55,4 @@
         </div>
         </form>
       </div>
-    </div>
+    </div> -->

@@ -38,36 +38,107 @@ class FixController extends Controller
      * @return array
      */
     
-    public function index(Request $request){
+        public function index(Request $request){
         if(!Auth::user()) $this->redirect(); 
 
         $role_id = Auth::user()->role_id;
         $user_id = Auth::user()->id;
         $search = [];
-        $this->View['city_name'] = Provincial::getCity();
-       
+
         $this->View['agence'] = User::getAgence();
         $this->View['tctd'] = Lender::getLender();
         $this->View['status']=LogsStatus::getStatus();
-        $this->View['tctd'][0]= $this->View['agence'][0] = $this->View['status'][0]="Tìm kiếm theo";
+        $this->View['tctd'][0] = $this->View['agence'][0] = $this->View['status'][0]="Tìm kiếm theo";
 
         $this->View['qlead'] = MrData::qlead();
         $this->View['type'] = MrData::typehs();
         $this->View['point'] = MrData::point();
         $this->View['show'] = MrData::sort_order();
-        
         $params = $request->all();
-        $show = isset($params['show']) ? $params['show'] : 1;
-        $list = HistoryLog_View::listHsv($params);
-        $this->View['history'] = $this->pagination($list, $show , $request);
-        
-        
-        $this->View['search']=$params;
+        $search['show']         = isset($params['show']) ? $params['show'] :50;
+        // $search['agence'][0] = $search['status'][0] = $search['tctd'][0]  = 0;
+        $sql = 'status = 1';
+        $sort = ['created_at','desc'];
+        if(!empty($params)){
+            $search['agence']       = isset($params['agence']) ? $params['agence'] :'';
+            $search['tctd']         = isset($params['tctd']) ? $params['tctd'] :'';
+            $search['type']          = isset($params['type']) ? $params['type']:'';
+            $search['status']        = isset($params['status']) ? $params['status'] : '';
+            $search['key']          = isset($params['key']) ? $params['key'] : '';
+            $search['from_date_tn'] = isset($params['from_date_tn']) ? $params['from_date_tn']: '';
+            $search['to_date_tn']   = isset($params['to_date_tn']) ? $params['to_date_tn'] : '';
+            $search['point']        = isset($params['point']) ? $params['point'] : '';
+           
+            $search['qlead']        = isset($params['qlead']) ? $params['qlead'] : '';
+  
+            if(!empty($search['type'])){
+                    if($search['type'] === '1'){
+                        $sql= $sql." AND history_log_id IS NOT NULL"; 
+                    }else{
+                        $sql= $sql." AND history_log_id IS NULL"; 
+                    }
+                }
+                    
+
+                if(!empty($search['tctd'])) {
+                    $sql = $sql." AND tctd_id_hist = '{$search['tctd']}'";
+                }
+                if(!empty($search['agence'])){
+                    $sql = $sql." AND user_ref = '{$search['agence']}'";
+                }
+
+                if(!empty($search['status'])){
+                    $sql = $sql." AND trangthai = {$search['status']}";   
+                }
+
+                 if(!empty($search['key'])){
+                    $sql = $sql." AND (cmnd LIKE '%{$search['key']}%' OR phone LIKE '%{$search['key']}%' OR name LIKE '%{$search['key']}%' )";
+                }
+
+                 if(!empty($search['from_date_tn'])){
+                    $sql = $sql." AND created_at >=  '{$search['from_date_tn']} 00:00:00' ";
+                }
+                 if(!empty($search['to_date_tn'])){
+                    $sql = $sql." AND created_at <=  '{$search['to_date_tn']} 23:59:59' ";
+                }
+                   
+                 if(!empty($search['qlead'])){
+                    $sql = $sql." AND qlead = {$search['qlead']}";
+                }
+                    
+                 if(!empty($search['point'])){
+                    if($search['point'] === '1'){
+                    $sort = ['final_score','asc'];
+                    }
+                    if($search['point'] === '2' ){
+                        $sort = ['final_score','desc'];
+                    } 
+                    if($search['point'] === '3'){
+                        $sort = ['khoanvay','asc'];
+                    }
+                    if($search['point'] === '4' ){
+                        $sort = ['khoanvay','desc'];
+                    }
 
 
+                }
+
+            
+            
+        }
+
+        $this->View['search']=$search;
+        // end search
+
+        // role Admin
+        $this->View['history'] = HistoryLog_View::select('name','cid_customer_name','agencies','history_log_id','id','phone','cmnd','khoanvay','status_name','address1','tctd_id_hist','age','final_score','created_at','debt','qlead','progress_info','referal_name','trangthai','status')
+                                ->whereRaw($sql)->orderBy($sort[0],$sort[1])->paginate($search['show']);
+        $this->View['total_chichamdiem'] = HistoryLog_View::whereRaw($sql)->where([['progress_info','=',5],['history_log_id','=',null],['status','=',1]])->distinct('cmnd')->count();
+        $this->View['total_gui'] = HistoryLog_View::whereRaw($sql)->where([['progress_info','>',0],['history_log_id','!=',null],['status','=',1]])->distinct('cmnd')->count();
+        
         // return $history;
         
-        return view('admin.history.fix',$this->View);
+        return view('admin.history.browse',$this->View);
         
     }
     public function pagination($items,$perPage,$request)

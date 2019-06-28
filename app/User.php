@@ -5,6 +5,7 @@ namespace App;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Cache;
 
 class User extends \TCG\Voyager\Models\User
 {
@@ -27,4 +28,11 @@ class User extends \TCG\Voyager\Models\User
     protected $hidden = [
         'password', 'remember_token',
     ];
+
+    protected static function getAgence(){
+        return $data = Cache::remember('get_Agence',100,function(){
+            $agence = User::whereIn('role_id',[8,1,10])->pluck('name','id');
+            return $agence;
+        });
+    }
 }

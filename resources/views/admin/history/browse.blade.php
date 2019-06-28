@@ -76,7 +76,7 @@ background-color: #e5ece6;
                                     <label for="inputPassword6" > </label>
                                     <div class="form-group">
 
-                                        {!! Form::select('xxx',$xxx,@$search['xxx'],['class'=>"form-control ",'style'=>'min-width: 200px;' ]) !!}
+                                        {!! Form::select('type',$type,@$search['type'],['class'=>"form-control ",'style'=>'min-width: 200px;' ]) !!}
                                         
                                     </div>
                                 </div>
@@ -112,7 +112,7 @@ background-color: #e5ece6;
                                 <div class="col-sm-8" style="margin-bottom: 10px; padding-left: 35px;">
                                     <label for="inputPassword6" > </label>
                                     <div class="form-group">
-                                        {!! Form::select('zzz',$zzz,@$search['zzz'],['class'=>"form-control ",'style'=>'min-width: 200px;' ]) !!}
+                                        {!! Form::select('status',$status,@$search['status'],['class'=>"form-control ",'style'=>'min-width: 200px;' ]) !!}
                                     </div>
                                 </div>
                                 <div class="col-sm-4" style="padding-bottom: 10px;">
@@ -205,8 +205,7 @@ background-color: #e5ece6;
         <div class="panel panel-bordered">
             <div class="panel-body">
                 <div class="table-responsive">
-                    <form onsubmit="return confirm('Có chắc chắn muốn chuyển các hồ sơ này đến Team-CS ?')" action="{{route('send-to-cs-team')}}" method="post" accept-charset="utf-8">
-                        @csrf
+                   
 
                         <table id="customers" class="table-hover">
                             @if($role_id != 7)
@@ -214,7 +213,7 @@ background-color: #e5ece6;
                             <caption style="color: #22a7f0; margin-bottom: 30px;"> &#9679;&nbsp;Hồ sơ đã gửi hồ sơ vay(Total):&nbsp;<span class="label label-success" style="font-weight: bold;">{{$total_gui}}</span></caption>
                             @else
                             <caption style="color: #22a7f0; margin-bottom: 30px;">&#9679;&nbsp;Hồ sơ chấm điểm: <span class="label label-danger" style="font-weight: bold;">{{$total_chichamdiem}}</span>|| &#9679;&nbsp;Hồ sơ vay:&nbsp;<span class="label label-success" style="font-weight: bold;">{{$total_gui}}</span>
-                                <button type="button" id="approve" class="btn btn-warning" data-toggle="modal" data-target=".bd-example-modal-lg" style="float: right;margin-right: 10px;">Duyệt</button>
+                                <!-- <button type="button" id="approve" class="btn btn-warning" data-toggle="modal" data-target=".bd-example-modal-lg" style="float: right;margin-right: 10px;">Duyệt</button> -->
                                 <button type="button" id="exportexcel" class="btn btn-success" data-toggle="modal" data-target="#exampleModalExport" style="float: right;margin-right: 10px;">Export Excel</button>
                                 <button type="button" id="importexcel" class="btn btn-default" data-toggle="modal" data-target="#exampleModalImport" style="float: right;margin-right: 10px;">Import Excel</button>
 
@@ -222,9 +221,6 @@ background-color: #e5ece6;
 
                             @endif
                             @endif
-                            
-                             <hr>
-
                             <nav style="float: right;">
                                {!!$history->appends($search)->render()!!}
                             </nav>
@@ -287,52 +283,37 @@ background-color: #e5ece6;
                                         <?php $date = date('d-m-Y', strtotime($val->created_at))  ?> 
                                         <?php $date_1 = date('d-m-Y h:i A', strtotime($val->ngay_gui_ho_so))  ?> 
                                         
-                                        
-
-                                        <!-- <td>@if($date !== '01-01-1970'){{ date('d-m-Y', strtotime($val->created_at)) }} @endif </td> -->
-                                        @if($val->history_log_id !== null)
                                         <td>
-                                            <a href="{{url('admin/history/view-edit',[$val->history_log_id,$val->cmnd])}}" title="View">
-                                                <?php 
-                                                    $name_vta = App\UserTax::where('cmnd',$val->cmnd)->first();
-                                                    if(!empty($val->name)){
-                                                       echo $val->name; 
-                                                    }elseif($val->cid_customer_name){
-                                                        echo $val->cid_customer_name;
-                                                    }else{
-                                                        echo $name_vta['name'];
-                                                    }
-                                                ?>
+                                          @if($val['history_log_id'] !== null)
+                                          <a href="{{url('admin/history/view-edit',[$val['history_log_id'],$val['cmnd']])}}" title="View">
+                                              @if(!empty($val['name']))
+                                                {{$val['name']}}
+                                              @elseif($val['cid_customer_name'])
+                                                {{$val['cid_customer_name']}}
+                                              @endif
+                                          </a>
+                                          @else
+                                            <a href="{{url('admin/history/view-edit',[$val['id'],$val['cmnd']])}}" title="View" >
+                                              @if(!empty($val['name']))
+                                                {{$val['name']}}
+                                              @elseif($val['cid_customer_name'])
+                                                {{$val['cid_customer_name']}}
+                                              @endif
                                             </a>
+                                          @endif
                                         </td>
-                                        @else
-                                        <td>
-                                            <a href="{{url('admin/history/view-edit',[$val->id,$val->cmnd])}}" title="View" >
-                                                <?php 
-                                                    $name_vta = App\UserTax::where('cmnd',$val->cmnd)->orWhere('cccd',$val->cmnd)->first();
-                                                    if(!empty($val->name)){
-                                                       echo $val->name; 
-                                                    }elseif(!empty($val->cid_customer_name)){
-                                                        echo $val->cid_customer_name;
-                                                    }else{
-                                                        echo $name_vta['name'];
-                                                    }
-                                                ?>
-                                            </a>
-                                        </td>
-                                        @endif
                                         <td>
                                             <p style="font-weight: bold;font-size: 15px;color: red;">{{$val->final_score}}</p>
                                         </td>
                                         <td>
                                             <p style="font-weight: bold;font-size: 15px;color: #4722da;">@if(isset($val->khoanvay )){{ $val->khoanvay }} VNĐ @endif</p>
                                         </td>
-                                        <td> {{ $val->phone_id }}</td>
+                                        <td> {{ $val->phone }}</td>
                                         <td>{{ $val->cmnd }}</td>
                                         
                                         <td>
                                             <?php
-                                                $city = DB::table('devvn_tinhthanhpho')->get()->toArray();
+                                                $city = DB::table('devvn_tinhthanhpho')->get();
                                                 $idPronvi = unserialize($val->address1)['matp_address'];
                                                 foreach ($city as $key => $value) {
                                                     if($idPronvi == $value->matp)
@@ -345,41 +326,29 @@ background-color: #e5ece6;
                                         
                                         <td>
                                             <?php $year = date('Y', strtotime($val->age));
-                                              $age = date('Y')-$year;
-                                              if($year !== '1970'){
-                                                echo $age;
-                                              }else{
-                                                echo '';
-                                              } 
+                                              $age = date('Y')-$year;echo $age;
+                                              
                                             ?>
                                             
                                         </td>
                                         <td>
-                                            @if($val->referal_name == 'swifi')
-                                                {{$val->referal_name}}
-                                            @else
-                                                {{$val->agencies }}
-                                            @endif
+
+                                            {{$val->agencies }}
+
                                         </td>
                                         <td>
-                                            @if(!empty($val->ngay_gui_ho_so))
-                                            {{ date('d-m-Y h:i A', strtotime($val->ngay_gui_ho_so)) }} 
-                                            @else 
+
                                             {{date('d-m-Y h:i A', strtotime($val->created_at))}} 
-                                            @endif
                                         </td>
                                         <td>
-                                            <?php $tctd = App\CicLog::where('id',$val->id)->first();?>
-                                            @if($val->history_log_id !== null)
-                                                {{$tctd['debt']}}
-                                            @endif
+                                            
+                                            {{$val['debt']}}
+                                            
                                         </td>
                                         <td>
                                            
-                                            <?php
-                                              $lead = App\CicLog::where('id',$val->id)->first();
-                                            ?> 
-                                            @if($lead['qlead'] == 1)
+
+                                            @if($val['qlead'] == 1)
                                             <span class="label label-warning">  QLead
                                             </span>
                                             @endif
@@ -388,14 +357,9 @@ background-color: #e5ece6;
                                         <td>
                                             @if(($val->progress_info == 5) && ($val->history_log_id == null))
                                                 <span class="label label-danger">Hồ sơ chỉ chấm điểm</span>
-                                            @elseif($val->progress_info < 50 && $val->history_log_id != null)
-                                                <span class="label label-success">Hồ sơ đã gửi hồ sơ vay</span>
-                                            @elseif($val->progress_info < 50 && $val->history_log_id == null)
-                                                <span class="label label-info">Hồ sơ chưa cập nhật đầy đủ</span>
-                                            @elseif($val->progress_info >= 50 && $val->history_log_id == null)
-                                                <span class="label label-warning">Hồ sơ chưa gửi hồ sơ vay</span>
-                                            @elseif($val->progress_info > 50 && $val->history_log_id !==null)
-                                                <span class="label label-success">Hồ sơ đã gửi hồ sơ vay</span>
+                                            @elseif($val->history_log_id != null)
+                                                <span class="label label-success">Hồ sơ vay</span>
+                                           
                                             @endif
                                         </td>
                                         <td>
@@ -459,7 +423,7 @@ background-color: #e5ece6;
                                         <?php $date_1 = date('d-m-Y', strtotime($val->ngay_gui_ho_so))  ?> 
                                         <td>@if($date !== '01-01-1970'){{ date('d-m-Y', strtotime($val->created_at)) }} @endif </td>
                                         <td>@if($date_1 !== '01-01-1970'){{ date('d-m-Y', strtotime($val->ngay_gui_ho_so)) }} @else {{'Chưa gửi'}} @endif</td>
-                                        <td> {{ $val->phone_id }}</td>
+                                        <td> {{ $val->phone }}</td>
                                         <td>{{ $val->cmnd }}</td>
                                         <td>{{ $val->so_tien_giai_ngan }}</td>
                                         <td>@if($val->ngay_giai_ngan != '0000-00-00 00:00:00') {{ $val->ngay_giai_ngan }} @endif</td>
@@ -591,7 +555,7 @@ background-color: #e5ece6;
                                                 <tr>
                                                     <td>{{$i++}}</td>
                                                     <td>{{ $val->id }}</td>
-                                                    <td> {{'*******'.substr((string)$val->phone_id,-3)}}</td>
+                                                    <td> {{'*******'.substr((string)$val->phone,-3)}}</td>
                                                     <td>
                                                         
                                                         {{'*********'.substr((string)$val->cmnd,-3)}}
@@ -663,7 +627,6 @@ background-color: #e5ece6;
                         <nav style="float: right;">
                            {!!$history->appends($search)->render()!!}
                         </nav>
-                    </form>
                 </div>
             </div>
 
@@ -770,7 +733,6 @@ background-color: #e5ece6;
         </form>
       </div>
     </div>
-    @include('admin.history.modal_TCTD')
 
 
 
@@ -779,12 +741,12 @@ background-color: #e5ece6;
 @stop
 @section('javascript')
 <script type="text/javascript">
-    @if(isset($status))
-        $('#status_search_history option[value={{$status}}]').attr('selected','selected');      
-    @endif 
-    @if(isset($status_profile))
-        $('#status_profile_search_history option[value={{$status_profile}}]').attr('selected','selected');    
-    @endif
+    // @if(isset($status))
+    //     $('#status_search_history option[value={{$status}}]').attr('selected','selected');      
+    // @endif 
+    // @if(isset($status_profile))
+    //     $('#status_profile_search_history option[value={{$status_profile}}]').attr('selected','selected');    
+    // @endif
 
     $(document).ready(function() {
         $('select[name="group_u"]').on('change', function(){

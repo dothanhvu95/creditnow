@@ -18,4 +18,12 @@ class LenderResults extends Model
      	'created_at',
      	'updated_at'
      ];
+
+     protected static function getLenderResult($log_id){
+          $data = LenderResults::where('log_id',$log_id)->orderBy('id','desc')->get();
+          foreach ($data as $key => $value) {
+               $result = $value;
+          }
+          return $result;
+     }
 }

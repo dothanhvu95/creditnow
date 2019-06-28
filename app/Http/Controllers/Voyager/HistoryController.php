@@ -21,6 +21,8 @@ use App\LenderResults;
 use App\UserGroup;
 use App\Referal;
 use Excel;
+use App\MrData;
+use App\Helper\History as HelperHistory;
 use App\Support;
 use DB;
 
@@ -42,111 +44,84 @@ class HistoryController extends Controller
         $user_id = Auth::user()->id;
         $search = [];
 
-        $this->View['agence'] = User::whereIn('role_id',[8,1,10])->get()->pluck('name','id');
-        $this->View['agence'][0]="Chọn Agencies";
+        $this->View['agence'] = User::getAgence();
+        $this->View['tctd'] = Lender::getLender();
+        $this->View['status']=LogsStatus::getStatus();
+        $this->View['tctd'][0]= $this->View['agence'][0] = $this->View['status'][0]="Tìm kiếm theo";
+
+        $this->View['qlead'] = HelperHistory::qlead();
+        $this->View['type'] = HelperHistory::typehs();
+        $this->View['point'] = HelperHistory::point();
+        $this->View['show'] = HelperHistory::sort_order();
         
-        $this->View['team_cs'] = $this->team_cs();
-        $this->View['tctd'] = Lender::where('status',1)->get()->pluck('name','id');
-        $this->View['tctd'][0]="Chọn tổ chức tín dụng";
-        
-        $this->View['logsstatus'] = LogsStatus::get();
-        $this->View['zzz']=LogsStatus::where("status","1")->get()->pluck("name","id");
-        $this->View['zzz'][0]="Chọn trạng thái";
-
-        $search['zzz'] = $search['agence'] = $search['tctd'] = 0;
-        $lead = array(
-            '' => 'Chọn',
-            '0' => 'Un QLead',
-            '1' => 'QLead'
-        );
-
-        $this->View['qlead'] = $lead;
-        $xxx=array(
-                ""=>"Tất cả hồ sơ",
-                "1"=>"Hồ sơ vay ",
-                "2"=>"Hồ sơ chấm điểm"
-             
-        );
-
-        $this->View['xxx'] = $xxx;
-        $diem = array(
-                ""=>"Chọn",
-                "1"=>"Điểm từ thấp đến cao ",
-                "2"=>"Điểm từ cao đến thấp",
-                "3"=>"Khoản vay từ thấp đến cao ",
-                "4"=>"Khoản vay từ cao đến thấp"
-        );
-
-        $this->View['point'] = $diem;
-         $show = array(
-            "50"    => '50',
-            "100"   => '100',
-            "200"   => '200',
-            "300"   => '300'
-        );
-
-        $this->View['show'] = $show;
-        
+        $search['show']    = $request->input('show',50);
         
         $sql = 'status = 1';
         $sort = ['created_at','desc'];
-        if($request->isMethod("get")){
+        if(!empty($request)){
             $search['agence']       = $request->input('agence',0);
             $search['tctd']         = $request->input('tctd',0);
-            $search['xxx']          = $request->input('xxx',0);
-
-            $search['zzz']          = $request->input('zzz',0);
-            $search['key']          = $request->input('key','');
-            $search['from_date_tn'] = $request->input('from_date_tn','');
-            $search['to_date_tn']   = $request->input('to_date_tn','');
-            $search['point']        = $request->input('point','');
-            $search['show']         = $request->input('show',50);
-            $search['qlead']        = $request->input('qlead','');
-
-
-            if(!empty($search['xxx'])){
-                if($search['xxx'] === '1'){
-                    $sql= $sql." AND history_log_id IS NOT NULL"; 
+            $search['type']          = $request->input('type');
+            $search['status']          = $request->input('status',0);
+            $search['key']          = $request->input('key');
+            $search['from_date_tn'] = $request->input('from_date_tn');
+            $search['to_date_tn']   = $request->input('to_date_tn');
+            $search['point']        = $request->input('point');
+            
+            $search['qlead']        = $request->input('qlead');
+  
+            if(!empty($search['type'])){
+                    if($search['type'] === '1'){
+                        $sql= $sql." AND history_log_id IS NOT NULL"; 
+                    }else{
+                        $sql= $sql." AND history_log_id IS NULL"; 
+                    }
                 }
-                if($search['xxx'] === '2' ){
-                    $sql= $sql." AND history_log_id IS NULL AND progress_info = 5"; 
-                } 
-            }
-            if(!empty($search['tctd'])){
-                $sql = $sql." AND tctd_id_hist = '{$search['tctd']}'";
-            }
-            if(!empty($search['agence'])){
-                $sql = $sql." AND user_ref = '{$search['agence']}'";
-            }
-            if(!empty($search['zzz'])){
-                $sql = $sql." AND trangthai = {$search['zzz']}";   
-            }
-            if(!empty($search['key'] )){
-                $sql = $sql." AND (cmnd LIKE '%{$search['key']}%' OR phone LIKE '%{$search['key']}%' OR name LIKE '%{$search['key']}%' )";
-            }
-            if(!empty($search['from_date_tn'])){
-                $sql = $sql." AND created_at >=  '{$search['from_date_tn']} 00:00:00' ";
-            }
-            if(!empty($search['to_date_tn'])){
-                $sql = $sql." AND created_at <=  '{$search['to_date_tn']} 23:59:59' ";
-            }
-            if(!empty($search['qlead'])){
-                $sql = $sql." AND qlead = {$search['qlead']}";
-            }
-            if(!empty($search['point'])){
-                if($search['point'] === '1'){
+                    
+
+                if(!empty($search['tctd'])) {
+                    $sql = $sql." AND tctd_id_hist = '{$search['tctd']}'";
+                }
+                if(!empty($search['agence'])){
+                    $sql = $sql." AND user_ref = '{$search['agence']}'";
+                }
+
+                if(!empty($search['status'])){
+                    $sql = $sql." AND trangthai = {$search['status']}";   
+                }
+
+                 if(!empty($search['key'])){
+                    $sql = $sql." AND (cmnd LIKE '%{$search['key']}%' OR phone LIKE '%{$search['key']}%' OR name LIKE '%{$search['key']}%' )";
+                }
+
+                 if(!empty($search['from_date_tn'])){
+                    $sql = $sql." AND created_at >=  '{$search['from_date_tn']} 00:00:00' ";
+                }
+                 if(!empty($search['to_date_tn'])){
+                    $sql = $sql." AND created_at <=  '{$search['to_date_tn']} 23:59:59' ";
+                }
+                   
+                 if(!empty($search['qlead'])){
+                    $sql = $sql." AND qlead = {$search['qlead']}";
+                }
+                    
+                 if(!empty($search['point'])){
+                    if($search['point'] === '1'){
                     $sort = ['final_score','asc'];
+                    }
+                    if($search['point'] === '2' ){
+                        $sort = ['final_score','desc'];
+                    } 
+                    if($search['point'] === '3'){
+                        $sort = ['khoanvay','asc'];
+                    }
+                    if($search['point'] === '4' ){
+                        $sort = ['khoanvay','desc'];
+                    }
+
+
                 }
-                if($search['point'] === '2' ){
-                    $sort = ['final_score','desc'];
-                } 
-                if($search['point'] === '3'){
-                    $sort = ['khoanvay','asc'];
-                }
-                if($search['point'] === '4' ){
-                    $sort = ['khoanvay','desc'];
-                }
-            }
+
             
             
         }
@@ -154,30 +129,18 @@ class HistoryController extends Controller
         $this->View['search']=$search;
         // end search
 
-
-        if ($role_id == 7) {
-            $this->View['history'] = HistoryLog_View::where('history_log_id','!=',null)->orderBy($sort)->paginate(50);
-           
-
-        }
-        else if($role_id !== 1 && $role_id !== 4 && $role_id !== 5 && $role_id !== 6)
-        {
-            $this->View['history'] = HistoryLog_View::whereRaw($sql)->where('user_ref',$user_id)->orderBy($sort[0],$sort[1])->paginate($search['show']);
-            $this->View['total_chichamdiem'] = HistoryLog_View::whereRaw($sql)->where([['progress_info','=',5],['history_log_id','=',null],['user_ref','=',$user_id]])->count();
-            $this->View['total_gui'] = HistoryLog_View::whereRaw($sql)->where([['history_log_id','!=',null],['user_ref','=',$user_id]])->count();
-        }
-        else
-        {
-            // role Admin
-            $this->View['history'] = HistoryLog_View::whereRaw($sql)->orderBy($sort[0],$sort[1])->paginate($search['show']);
-            $this->View['total_chichamdiem'] = HistoryLog_View::whereRaw($sql)->where([['progress_info','=',5],['history_log_id','=',null],['status','=',1]])->distinct('cmnd')->count();
-            $this->View['total_gui'] = HistoryLog_View::whereRaw($sql)->where([['progress_info','>',0],['history_log_id','!=',null],['status','=',1]])->distinct('cmnd')->count();
-        }
+        // role Admin
+        $this->View['history'] = HistoryLog_View::getList($sql,$sort[0],$sort[1],$search['show']);
+        $this->View['total_chichamdiem'] = HistoryLog_View::getTotalPoint($sql); 
+        $this->View['total_gui'] = HistoryLog_View::getTotalHsv($sql);
+        
         // return $history;
         
         return view('admin.history.browse',$this->View);
         
     }
+
+   
 
 
     public function getExportPhone(Request $request){
@@ -239,7 +202,7 @@ class HistoryController extends Controller
                 
                 $data = \Excel::load($path)->get();
                 $tctd_id = $request->input('tctd');
-
+                
                 if($data->count() > 0){
                     
                     if($tctd_id == 2){
@@ -285,6 +248,22 @@ class HistoryController extends Controller
                                             }
                                             $update_status = HistoryLog::where('log_id',$id_cic->id)->update(['status'=>6,'tctd_id'=>$tctd_id]);
                                         break;
+                                        case ($value->result == 'PENDING' ):
+                                            
+                                            if(empty($check)){
+                                                $create_lender = array(
+                                                    'tctd_id' =>  $tctd_id,
+                                                    'content' => $value->cleansing, 
+                                                    'status' => 5,
+                                                    'log_id' => $history_id->id
+                                                );
+                                                
+                                                $this->create_lender_results($create_lender);    
+                                            }else{
+                                                $update_lender = LenderResults::where('log_id',$history_id->id)->where('tctd_id',$tctd_id)->update(['content'=>$value->cleansing,'status'=>5]);
+                                            }
+                                            $update_status = HistoryLog::where('log_id',$id_cic->id)->update(['status'=>5,'tctd_id'=>$tctd_id]);
+                                        break;
 
                                         
                                     }
@@ -296,12 +275,13 @@ class HistoryController extends Controller
                         }
                     }
                     if($tctd_id == 7){
-                        DB::beginTransaction();
+                        
                         foreach ($data as $key => $value) {
                             // hồ sơ trùng 
-                            if($value->ket_qua_import){
-                                try {
-                                    $id_cic = CicLog::where('cmnd',$value->cmnd)->first();
+                            if($value->result == ''){
+
+                                   $id_cic = CicLog::where('cmnd',$value->cmt)->first();
+                                   
                                     if(!empty($id_cic)){
                                         $history_id = HistoryLog::where('log_id',$id_cic->id)->first();
                                         
@@ -310,30 +290,54 @@ class HistoryController extends Controller
                                             if(empty($check)){
                                                 $create_lender = array(
                                                     'tctd_id' =>  $tctd_id,
-                                                    'content' => $value->ket_qua_import, 
+                                                    'content' => 'OK', 
+                                                    'status' => 8,
+                                                    'log_id' => $history_id->id
+                                                );
+                                               
+                                                DB::table('lender_results')->insert($create_lender);    
+                                            }else{
+                                                DB::table('lender_results')->where('log_id',$history_id->id)->where('tctd_id',$tctd_id)->update(['content'=>'OK','status'=>8]);
+                                            } 
+                                        }
+                                            DB::table('history_log')->where('log_id',$id_cic->id)->update(['status'=>8,'tctd_id'=>$tctd_id]);
+
+
+                                    } 
+                                
+                                
+                                    
+                                   
+                            }elseif($value->result == 'cleansing' || $value->result == 'Cleansing'){
+                                $id_cic = CicLog::where('cmnd',$value->cmt)->first();
+                                   
+                                    if(!empty($id_cic)){
+                                        $history_id = HistoryLog::where('log_id',$id_cic->id)->first();
+                                        
+                                        if(!empty($history_id->id)){
+                                            $check = LenderResults::where('log_id',$history_id->id)->where('tctd_id',$tctd_id)->first();
+                                            if(empty($check)){
+                                                $create_lender = array(
+                                                    'tctd_id' =>  $tctd_id,
+                                                    'content' => $value->cleansing, 
                                                     'status' => 6,
                                                     'log_id' => $history_id->id
                                                 );
                                                 
                                                 DB::table('lender_results')->insert($create_lender);    
                                             }else{
-                                                DB::table('lender_results')->where('log_id',$history_id->id)->where('tctd_id',$tctd_id)->update(['content'=>$value->ket_qua_import,'status'=>6]);
+                                                DB::table('lender_results')->where('log_id',$history_id->id)->where('tctd_id',$tctd_id)->update(['content'=>$value->cleansing,'status'=>6]);
                                             } 
                                         }
                                             DB::table('history_log')->where('log_id',$id_cic->id)->update(['status'=>6,'tctd_id'=>$tctd_id]);
 
 
                                     }
-                                    
-                                    DB::commit();
-                                } catch (Exception $e) {
-                                    DB::rollBack();
-                                    
-                                    throw new Exception($e->getMessage());
-                                }
+
                             }else{
+                                $cmt = explode('/',$value->id_card);
                                 $result = $this->statusdetail($value->last_tel_status_detail);
-                                $id_cic = CicLog::where('cmnd',$value->id_card)->first();
+                                $id_cic = CicLog::where('cmnd',$cmt[0])->first();
                                 if(!empty($id_cic)){
 
                                     $history_id = HistoryLog::where('log_id',$id_cic->id)->first();
@@ -669,8 +673,8 @@ class HistoryController extends Controller
                 $timestamp = strtotime(date('Y-m-d H:m:s'));
                 $vendorid = 10;
 
-                $result[]=["TransactionID","Họ tên","Số điện thoại 1","Điện thoại 2","CMT","Địa chỉ","Năm sinh","Mức thu nhập","Nguồn thu nhập","Nhu Cầu Vay","Email","Agencies","point","Date"];
-                $TData = HistoryLog_View::select('cmnd','address1','income','age','history_log_id','name','phone','agencies','final_score','khoanvay','created_at')
+                $result[]=["TransactionID","Họ tên","Số điện thoại 1","Điện thoại 2","CMT","Địa chỉ","Năm sinh","Mức thu nhập","Nguồn thu nhập","Nhu Cầu Vay","Email","Agencies","point","Date","Status"];
+                $TData = HistoryLog_View::select('cmnd','address1','income','age','history_log_id','name','phone','agencies','final_score','khoanvay','created_at','status_name')
                                         ->whereIn('history_log_id',$id)->orderBy('created_at','DESC')->get()->toArray(); 
                 
                 $provinve = Provincial::pluck('name','matp');
@@ -728,7 +732,8 @@ class HistoryController extends Controller
                           '',
                           $value['agencies'],
                           $point,
-                          $value['created_at']
+                          $value['created_at'],
+                          $value['status_name']
 
                     );
 
