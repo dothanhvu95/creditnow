@@ -22,6 +22,6 @@
     "dependencies": {
         "@nesk/puphpeteer": "^1.3.0",
         "@nesk/rialto": "^1.2.1",
-        "puppeteer": "^1.8.0"
+        "puppeteer": "^1.13.0"
     }
 }
